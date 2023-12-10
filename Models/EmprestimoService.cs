@@ -25,19 +25,105 @@ namespace Biblioteca.Models
                 emprestimo.LivroId = e.LivroId;
                 emprestimo.DataEmprestimo = e.DataEmprestimo;
                 emprestimo.DataDevolucao = e.DataDevolucao;
+                emprestimo.Devolvido = e.Devolvido;
 
                 bc.SaveChanges();
             }
         }
 
-        public ICollection<Emprestimo> ListarTodos(FiltrosEmprestimos filtro)
+  /*      public ICollection<Emprestimo> ListarTodos(FiltrosEmprestimos filtro)
         {
             using(BibliotecaContext bc = new BibliotecaContext())
             {
-                return bc.Emprestimos.Include(e => e.Livro).ToList();
+                IQueryable<Emprestimo> consulta;
+
+                if(filtro!=null)
+                {
+                    switch(filtro.TipoFiltro)
+                    {
+                        case "Usuario":
+                            consulta = bc.Emprestimos.Where(e => e.NomeUsuario.Contains(filtro.Filtro));
+                        break;
+
+                        case "Livro":
+
+                            List<Livro> LivrosFiltrados = bc.Livros.Where(l => l.Titulo.Contains(filtro.Filtro)).ToList();
+
+                            List<int>LivrosIds = new List<int>();
+                            for(int i = 0; i < LivrosFiltrados.Count; i++)
+                            {LivrosIds.Add(LivrosFiltrados[i].Id);}
+
+                            consulta = bc.Emprestimos.Where(e => LivrosIds.Contains(e.LivroId));
+                            var debug = consulta.ToList();
+                        break;
+
+                        default:
+                        consulta = bc.Emprestimos;
+                        break;
+                    }
+                
+                }
+                else
+                {
+                    consulta = bc.Emprestimos;
+                }
+                // rever o .OrderBy(e =>)
+                List<Emprestimo>ListaConsulta = consulta.OrderByDescending(e => e.DataDevolucao).ToList();
+                
+                for (int i = 0; i< ListaConsulta.Count; i++)
+                {
+                    ListaConsulta[i].Livro =  bc.Livros.Find(ListaConsulta[i].LivroId);
+                }
+                
+                return ListaConsulta;           
+            }
+        } */
+public ICollection<Emprestimo> ListarTodos(FiltrosEmprestimos filtro)
+{
+    using (BibliotecaContext bc = new BibliotecaContext())
+    {
+        IQueryable<Emprestimo> consulta;
+
+        if (filtro != null)
+        {
+            switch (filtro.TipoFiltro)
+            {
+                case "Usuario":
+                    consulta = bc.Emprestimos.Where(e => e.NomeUsuario.Contains(filtro.Filtro));
+                    break;
+
+                case "Livro":
+                    List<Livro> livrosFiltrados = bc.Livros.Where(l => l.Titulo.Contains(filtro.Filtro)).ToList();
+                    List<int> livrosIds = livrosFiltrados.Select(l => l.Id).ToList();
+
+                    consulta = bc.Emprestimos.Where(e => livrosIds.Contains(e.LivroId));
+                    break;
+
+                default:
+                    consulta = bc.Emprestimos;
+                    break;
             }
         }
+        else
+        {
+            consulta = bc.Emprestimos;
+        }
 
+        // Filtrar empréstimos devolvidos
+        consulta = consulta.Where(e => !e.Devolvido);
+
+        // Ordenar pela data de devolução
+        List<Emprestimo> listaConsulta = consulta.OrderByDescending(e => e.DataDevolucao).ToList();
+
+        // Carregar informações adicionais (por exemplo, dados do livro)
+        for (int i = 0; i < listaConsulta.Count; i++)
+        {
+            listaConsulta[i].Livro = bc.Livros.Find(listaConsulta[i].LivroId);
+        }
+
+        return listaConsulta;
+    }
+}
         public Emprestimo ObterPorId(int id)
         {
             using(BibliotecaContext bc = new BibliotecaContext())
